@@ -1,0 +1,6 @@
+{
+  "version": "2.11",
+  "release_date": "13/10/2026",
+  "changelog": "- Khớp thuế 100% không lệch 1 đồng\n- Mở rộng dải đơn giá 10 triệu\n- Mặc định 10 dòng/hóa đơn\n- Tự động gộp mã hàng tồn kho MISA\n- Chống lỗi crash khi file Excel bị mở",
+  "download_url": "https://github.com/Hoangha692/HDTDP/releases/download/v2.11/PM_HoaDon.zip"
+}
