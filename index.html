@@ -557,7 +557,10 @@
         
         <!-- Mục Tải Hóa Đơn -->
         <div style="margin-bottom:12px; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 12px; border:1px solid rgba(34,197,94,0.3);">
-            <div style="font-size:12px; font-weight:700; color:#4ade80; margin-bottom:8px;">📄 File Hóa Đơn (17 Cột Thuế Chuẩn)</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:700; color:#4ade80;">📄 File Hóa Đơn (17 Cột Thuế)</span>
+                <span id="badgeHoadonName" style="font-size:11px; color:#a7f3d0; background:rgba(34,197,94,0.18); padding:2px 8px; border-radius:6px; font-family:monospace; border:1px solid rgba(34,197,94,0.3);">HOADON.xlsx</span>
+            </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                 <button id="btnDlHoadon" class="btn-download" style="margin-bottom:0;" onclick="downloadHoaDon()">
                     📥 Tải Về (.xlsx)
@@ -570,7 +573,10 @@
 
         <!-- Mục Tải MISA Tồn Kho -->
         <div style="margin-bottom:12px; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 12px; border:1px solid rgba(56,189,248,0.3);">
-            <div style="font-size:12px; font-weight:700; color:#38bdf8; margin-bottom:8px;">📦 File MISA Đã Trừ Tồn Kho</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:12px; font-weight:700; color:#38bdf8;">📦 File MISA Đã Trừ Tồn Kho</span>
+                <span id="badgeMisaName" style="font-size:11px; color:#bae6fd; background:rgba(56,189,248,0.18); padding:2px 8px; border-radius:6px; font-family:monospace; border:1px solid rgba(56,189,248,0.3);">MISA.xlsx</span>
+            </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                 <button id="btnDlMisa" class="btn-download btn-download-misa" style="margin-bottom:0;" onclick="downloadMisa()">
                     📥 Tải Về (.xlsx)
@@ -732,6 +738,7 @@ try {
     const now = new Date();
     const todayStr = String(now.getDate()).padStart(2, '0') + "/" + String(now.getMonth() + 1).padStart(2, '0') + "/" + now.getFullYear();
     document.getElementById("inputNgayHd").value = todayStr;
+    document.getElementById("inputNgayHd").addEventListener("input", updateFileNameBadges);
 
     // Logging
     function log(msg) {
@@ -1430,13 +1437,14 @@ try {
             a.style.display = "none";
             a.href = blobUrl;
             a.download = filename;
+            a.setAttribute("download", filename);
             document.body.appendChild(a);
             a.click();
             setTimeout(() => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(blobUrl);
             }, 4000);
-            log(`[✔] Đang tải file Excel chuẩn: ${filename}`);
+            log(`[✔] Đang tải file Excel: ${filename}`);
         } catch (e) {
             log(`[!] Lỗi khi tải file: ${e.message}`);
             XLSX.writeFile(workbook, filename);
@@ -1466,28 +1474,59 @@ try {
         downloadExcelFile(workbook, filename);
     }
 
+    // Lấy chuỗi ngày tháng sạch dạng chữ số để đặt tên file mặc định (VD: 15102026)
+    function getCleanDateDigits() {
+        const val = (document.getElementById("inputNgayHd") ? document.getElementById("inputNgayHd").value : "").trim();
+        const digits = val.replace(/[^0-9]/g, "");
+        if (digits.length >= 6) {
+            return digits;
+        }
+        const now = new Date();
+        const d = String(now.getDate()).padStart(2, '0');
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const y = now.getFullYear();
+        return `${d}${m}${y}`;
+    }
+
+    function getHoaDonFileName() {
+        return `HOADON_${getCleanDateDigits()}.xlsx`;
+    }
+
+    function getMisaFileName() {
+        return `MISA_DaTruTonKho_${getCleanDateDigits()}.xlsx`;
+    }
+
+    function updateFileNameBadges() {
+        const hName = getHoaDonFileName();
+        const mName = getMisaFileName();
+        const elH = document.getElementById("badgeHoadonName");
+        const elM = document.getElementById("badgeMisaName");
+        if (elH) elH.textContent = hName;
+        if (elM) elM.textContent = mName;
+    }
+
     function downloadHoaDon() {
         if (!generatedHoadonWb) return;
-        const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
-        downloadExcelFile(generatedHoadonWb, `HOADON_${dateClean}.xlsx`);
+        const filename = getHoaDonFileName();
+        downloadExcelFile(generatedHoadonWb, filename);
     }
 
     function shareHoaDon() {
         if (!generatedHoadonWb) return;
-        const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
-        shareExcelFile(generatedHoadonWb, `HOADON_${dateClean}.xlsx`);
+        const filename = getHoaDonFileName();
+        shareExcelFile(generatedHoadonWb, filename);
     }
 
     function downloadMisa() {
         if (!misaRawWorkbook) return;
-        const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
-        downloadExcelFile(misaRawWorkbook, `MISA_DaTruTonKho_${dateClean}.xlsx`);
+        const filename = getMisaFileName();
+        downloadExcelFile(misaRawWorkbook, filename);
     }
 
     function shareMisa() {
         if (!misaRawWorkbook) return;
-        const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
-        shareExcelFile(misaRawWorkbook, `MISA_DaTruTonKho_${dateClean}.xlsx`);
+        const filename = getMisaFileName();
+        shareExcelFile(misaRawWorkbook, filename);
     }
 
     // Hàm xem trước bảng dữ liệu hóa đơn trực tiếp trên màn hình điện thoại
@@ -1543,8 +1582,9 @@ try {
     }
     setTimeout(checkMobileUpdate, 1500);
 
-    // Khởi chạy kiểm tra bản quyền
+    // Khởi chạy kiểm tra bản quyền & hiển thị tên file mặc định
     checkLicense();
+    updateFileNameBadges();
 </script>
 
 </body>
