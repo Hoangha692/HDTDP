@@ -592,11 +592,67 @@
             👁️ Xem Trước Bảng Hóa Đơn (Xem trực tiếp không cần Excel)
         </button>
 
-        <div style="font-size:11px; color:#cbd5e1; line-height:1.5; padding:8px 10px; background:rgba(30,41,59,0.7); border:1px dashed #64748b; border-radius:10px; margin-bottom:12px;">
+        <div style="font-size:11px; color:#cbd5e1; line-height:1.5; padding:8px 10px; background:rgba(30,41,59,0.7); border:1px dashed #64748b; border-radius:10px; margin-bottom:10px;">
             📌 <b>Hướng dẫn mở file sau khi tạo:</b><br>
             • <b>Xem nhanh ngay tại đây:</b> Bấm <b>👁️ Xem Trước Bảng Hóa Đơn</b> (không cần cài app).<br>
             • <b>Mở trên điện thoại:</b> Cài app <b>Microsoft Excel</b> hoặc <b>WPS Office</b> từ CH Play.<br>
             • <b>Gửi sang máy tính:</b> Bấm <b>📤 Gửi Zalo / Mở</b> &gt; chọn <i>Cloud của tôi</i> trên Zalo để tải về PC mở bằng Excel máy tính.
+        </div>
+
+        <!-- Mẹo tải tự động trên Google Chrome -->
+        <div style="background:rgba(2,132,199,0.12); border:1px solid rgba(56,189,248,0.3); border-radius:12px; padding:10px 12px; margin-bottom:12px; font-size:11px; color:#cbd5e1; line-height:1.6;">
+            💡 <b>MẸO TẢI 1-CHẠM TỰ ĐỘNG (KHÔNG CẦN DÁN TÊN):</b><br>
+            Mở link này trên Google Chrome: <a href="intent://hoangha692.github.io/HDTDP/#Intent;scheme=https;package=com.android.chrome;end" style="color:#38bdf8; font-weight:700; text-decoration:underline;">🌐 Mở Trên Google Chrome</a> &gt; bấm Menu (3 chấm) &gt; chọn <b>"Thêm vào Màn hình chính"</b>. Khi đó app sẽ tải file tự động 100% vào máy với đúng tên HOADON_ngày.xlsx mà không bao giờ hiện bảng Save As trống!
+        </div>
+    </div>
+
+    <!-- Modal Hướng Dẫn Tải File (Khắc phục Save As trống của WebIntoApp) -->
+    <div id="saveAsGuideModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.78); z-index:99999; justify-content:center; align-items:center; padding:16px;">
+        <div style="background:#1e293b; border:2px solid #38bdf8; border-radius:20px; padding:20px 16px; max-width:440px; width:100%; box-shadow:0 25px 50px rgba(0,0,0,0.85); text-align:center; animation:fadeIn 0.25s ease;">
+            <div style="font-size:36px; margin-bottom:8px;">📥</div>
+            <div style="font-size:16px; font-weight:800; color:#38bdf8; margin-bottom:6px;">ĐÃ COPY TÊN FILE MẶC ĐỊNH</div>
+            <div id="saveAsGuideFilename" style="background:#0f172a; border:1px solid rgba(56,189,248,0.3); padding:10px; border-radius:12px; font-family:monospace; font-size:14px; color:#4ade80; font-weight:800; margin-bottom:14px; word-break:break-all;">
+                HOADON_15102026.xlsx
+            </div>
+            <div style="font-size:13px; color:#f1f5f9; line-height:1.6; text-align:left; background:rgba(56,189,248,0.1); border-left:4px solid #38bdf8; padding:10px 12px; border-radius:10px; margin-bottom:16px;">
+                👉 <b>Khi bảng "Save As" của máy hiện ra:</b><br>
+                1. <b>Nhấn giữ</b> vào ô trống.<br>
+                2. Chọn <b>DÁN (Paste)</b> để điền tên có ngày tháng.<br>
+                3. Bấm <b>OK</b> để lưu file về máy!
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <button type="button" onclick="copyGuideFilename()" style="background:#0284c7; color:#fff; border:none; padding:12px 8px; border-radius:12px; font-weight:700; font-size:13px; cursor:pointer;">
+                    📋 Sao Chép Lại
+                </button>
+                <button type="button" onclick="closeSaveAsGuide()" style="background:#334155; color:#fff; border:none; padding:12px 8px; border-radius:12px; font-weight:700; font-size:13px; cursor:pointer;">
+                    Đã Hiểu ✓
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gửi Zalo / Mở (Khắc phục triệt để không bị hiện Save As) -->
+    <div id="zaloShareModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.78); z-index:99999; justify-content:center; align-items:center; padding:16px;">
+        <div style="background:#1e293b; border:2px solid #0068ff; border-radius:20px; padding:20px 16px; max-width:440px; width:100%; box-shadow:0 25px 50px rgba(0,0,0,0.85); text-align:center; animation:fadeIn 0.25s ease;">
+            <div style="font-size:36px; margin-bottom:8px;">💬</div>
+            <div style="font-size:16px; font-weight:800; color:#38bdf8; margin-bottom:6px;">GỬI THÔNG TIN SANG ZALO</div>
+            <div style="font-size:12px; color:#a7f3d0; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); border-radius:10px; padding:6px 10px; margin-bottom:12px; font-weight:600;">
+                ✔ Đã tự động sao chép tóm tắt hóa đơn vào bộ nhớ tạm!
+            </div>
+            <div id="zaloSummaryText" style="background:#0f172a; border:1px solid rgba(255,255,255,0.08); padding:10px; border-radius:12px; font-size:11px; color:#cbd5e1; text-align:left; margin-bottom:14px; max-height:130px; overflow-y:auto; line-height:1.6; white-space:pre-wrap; font-family:monospace;">
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button type="button" onclick="launchZaloApp()" style="background:#0068ff; color:#fff; border:none; padding:12px; border-radius:12px; font-weight:800; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span>📲 Mở Ứng Dụng Zalo</span>
+                    <span style="font-size:11px; font-weight:normal; opacity:0.85;">(Chỉ việc chọn bạn & Dán)</span>
+                </button>
+                <button type="button" onclick="shareViaAndroidSystem()" style="background:#0284c7; color:#fff; border:none; padding:10px; border-radius:12px; font-weight:700; font-size:13px; cursor:pointer;">
+                    📤 Menu Chia Sẻ Điện Thoại
+                </button>
+                <button type="button" onclick="closeZaloModal()" style="background:#334155; color:#cbd5e1; border:none; padding:9px; border-radius:10px; font-size:12px; cursor:pointer;">
+                    ✕ Đóng
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1400,6 +1456,12 @@ try {
 
         // Lưu lại dữ liệu hóa đơn để phục vụ xem trước
         lastGeneratedRows = rowsHoadon;
+        lastInvoiceStats = {
+            count: sttHd - 1,
+            total: tongDoanhThu,
+            date: ngayHdStr,
+            customer: defaultCustomer
+        };
 
         // Tạo Workbook Hóa đơn
         generatedHoadonWb = XLSX.utils.book_new();
@@ -1420,6 +1482,39 @@ try {
     }
 
     let lastGeneratedRows = [];
+    let lastInvoiceStats = null;
+    let pendingDownloadFilename = "";
+    let currentZaloText = "";
+
+    function showSaveAsGuide(filename) {
+        pendingDownloadFilename = filename;
+        const modal = document.getElementById("saveAsGuideModal");
+        const fnEl = document.getElementById("saveAsGuideFilename");
+        if (fnEl) fnEl.textContent = filename;
+        if (modal) modal.style.display = "flex";
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(filename);
+            }
+        } catch(e) {}
+    }
+
+    function closeSaveAsGuide() {
+        const modal = document.getElementById("saveAsGuideModal");
+        if (modal) modal.style.display = "none";
+    }
+
+    function copyGuideFilename() {
+        if (!pendingDownloadFilename) pendingDownloadFilename = getHoaDonFileName();
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(pendingDownloadFilename);
+                alert("📋 Đã sao chép: " + pendingDownloadFilename);
+                return;
+            }
+        } catch(e) {}
+        alert("Tên file: " + pendingDownloadFilename);
+    }
 
     // Hàm tải file Excel chuẩn MIME - Khắc phục triệt để lỗi Android tự đổi tên thành .bin
     function downloadExcelFile(workbook, filename) {
@@ -1430,33 +1525,39 @@ try {
             // 2. MIME type chuẩn của Microsoft Excel OpenXML (.xlsx)
             const mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             const blob = new Blob([wbout], { type: mimeType });
+            const blobUrl = URL.createObjectURL(blob);
 
             const a = document.createElement("a");
             a.style.display = "none";
-            a.href = blobUrl + "#/" + filename;
+            a.href = blobUrl;
             a.download = filename;
             a.setAttribute("download", filename);
             a.setAttribute("name", filename);
             a.title = filename;
             document.body.appendChild(a);
 
-            // Tự động sao chép tên file vào bộ nhớ tạm (phòng hờ Android Save As)
-            try {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(filename);
-                }
-            } catch(clipErr) {}
+            // Tự động sao chép tên file và hiện bảng hướng dẫn Save As
+            showSaveAsGuide(filename);
 
             a.click();
             setTimeout(() => {
                 document.body.removeChild(a);
                 URL.revokeObjectURL(blobUrl);
-            }, 4000);
+            }, 6000);
             log(`[✔] Đang tải file Excel: ${filename}`);
         } catch (e) {
             log(`[!] Lỗi khi tải file: ${e.message}`);
             XLSX.writeFile(workbook, filename);
         }
+    }
+
+    function buildInvoiceSummaryText(filename) {
+        const dateStr = (document.getElementById("inputNgayHd") ? document.getElementById("inputNgayHd").value : "").trim() || todayStr;
+        const count = (lastInvoiceStats && lastInvoiceStats.count) ? lastInvoiceStats.count : (lastGeneratedRows ? Math.max(0, lastGeneratedRows.length - 1) : 0);
+        const total = (lastInvoiceStats && lastInvoiceStats.total) ? lastInvoiceStats.total.toLocaleString() : "0";
+        const customer = (lastInvoiceStats && lastInvoiceStats.customer) ? lastInvoiceStats.customer : "Khách lẻ";
+
+        return `🧾 TỔNG HỢP HÓA ĐƠN ĐIỆN TỬ\n📅 Ngày: ${dateStr}\n👤 Khách hàng: ${customer}\n📊 Số lượng: ${count} hóa đơn\n💰 Tổng tiền: ${total} đ\n📁 File đính kèm: ${filename}\n-----------------------------\n(Tạo tự động từ PM_HoaDon Mobile)`;
     }
 
     // Hàm chia sẻ trực tiếp qua Zalo / Google Drive / Ứng dụng Excel trên điện thoại
@@ -1478,8 +1579,55 @@ try {
         } catch (e) {
             console.log("Share ignored:", e);
         }
-        // Fallback: Tự động tải về máy
-        downloadExcelFile(workbook, filename);
+        // KHÔNG BAO GIỜ gọi downloadExcelFile để tránh làm hiện bảng Save As trống!
+        // Mở menu gửi Zalo / Chia sẻ văn bản
+        openZaloShareModal(filename);
+    }
+
+    function openZaloShareModal(filename) {
+        const text = buildInvoiceSummaryText(filename);
+        currentZaloText = text;
+
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text);
+            }
+        } catch(e) {}
+
+        const modal = document.getElementById("zaloShareModal");
+        const txtEl = document.getElementById("zaloSummaryText");
+        if (txtEl) txtEl.textContent = text;
+        if (modal) modal.style.display = "flex";
+        log(`[✔] Đã sao chép tóm tắt hóa đơn để gửi Zalo.`);
+    }
+
+    function closeZaloModal() {
+        const modal = document.getElementById("zaloShareModal");
+        if (modal) modal.style.display = "none";
+    }
+
+    function launchZaloApp() {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText && currentZaloText) {
+                navigator.clipboard.writeText(currentZaloText);
+            }
+        } catch(e) {}
+        const zaloIntent = "intent:#Intent;package=com.zing.zalo;action=android.intent.action.MAIN;end";
+        window.location.href = zaloIntent;
+        setTimeout(() => {
+            window.open("https://chat.zalo.me", "_blank");
+        }, 1200);
+    }
+
+    function shareViaAndroidSystem() {
+        if (!currentZaloText) currentZaloText = buildInvoiceSummaryText(getHoaDonFileName());
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(currentZaloText);
+            }
+        } catch(e) {}
+        const intentUri = "intent:#Intent;action=android.intent.action.SEND;type=text%2Fplain;S.android.intent.extra.TEXT=" + encodeURIComponent(currentZaloText) + ";end";
+        window.location.href = intentUri;
     }
 
     // Lấy chuỗi ngày tháng sạch dạng chữ số để đặt tên file mặc định (VD: 15102026)
