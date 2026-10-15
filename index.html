@@ -545,12 +545,64 @@
     <!-- Download Box -->
     <div id="downloadBox" class="download-box">
         <div class="download-title">🎉 ĐÃ TẠO HÓA ĐƠN THÀNH CÔNG (100% KHỚP)</div>
-        <button id="btnDlHoadon" class="btn-download" onclick="downloadHoaDon()">
-            📥 TẢI FILE HÓA ĐƠN (17 CỘT THUẾ)
+        
+        <!-- Mục Tải Hóa Đơn -->
+        <div style="margin-bottom:12px; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 12px; border:1px solid rgba(34,197,94,0.3);">
+            <div style="font-size:12px; font-weight:700; color:#4ade80; margin-bottom:8px;">📄 File Hóa Đơn (17 Cột Thuế Chuẩn)</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <button id="btnDlHoadon" class="btn-download" style="margin-bottom:0;" onclick="downloadHoaDon()">
+                    📥 Tải Về (.xlsx)
+                </button>
+                <button class="btn-download" style="background:#0284c7; color:#ffffff; margin-bottom:0;" onclick="shareHoaDon()">
+                    📤 Gửi Zalo / Mở
+                </button>
+            </div>
+        </div>
+
+        <!-- Mục Tải MISA Tồn Kho -->
+        <div style="margin-bottom:12px; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 12px; border:1px solid rgba(56,189,248,0.3);">
+            <div style="font-size:12px; font-weight:700; color:#38bdf8; margin-bottom:8px;">📦 File MISA Đã Trừ Tồn Kho</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <button id="btnDlMisa" class="btn-download btn-download-misa" style="margin-bottom:0;" onclick="downloadMisa()">
+                    📥 Tải Về (.xlsx)
+                </button>
+                <button class="btn-download" style="background:#0284c7; color:#ffffff; margin-bottom:0;" onclick="shareMisa()">
+                    📤 Gửi Zalo / Mở
+                </button>
+            </div>
+        </div>
+
+        <!-- Nút Xem Trước Bảng Hóa Đơn Trực Tiếp -->
+        <button id="btnTogglePreview" class="btn-download" style="background:#6366f1; color:#ffffff; margin-bottom:0;" onclick="togglePreviewTable()">
+            👁️ Xem Trước Bảng Hóa Đơn (Xem trực tiếp không cần Excel)
         </button>
-        <button id="btnDlMisa" class="btn-download btn-download-misa" onclick="downloadMisa()">
-            📥 TẢI FILE MISA ĐÃ TRỪ TỒN KHO
-        </button>
+    </div>
+
+    <!-- Khung Xem Trước Bảng Hóa Đơn -->
+    <div id="previewContainer" style="display:none; margin-bottom:14px; background:#0f172a; border:1px solid #38bdf8; border-radius:16px; padding:12px; animation:fadeIn 0.3s ease;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:13px; font-weight:700; color:#38bdf8;">👁️ Bảng Dữ Liệu Hóa Đơn Vừa Tạo</span>
+            <button onclick="togglePreviewTable()" style="background:#334155; color:#cbd5e1; border:none; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer;">✕ Đóng</button>
+        </div>
+        <div style="max-height:280px; overflow-x:auto; overflow-y:auto; border:1px solid #1e293b; border-radius:10px;">
+            <table style="width:100%; border-collapse:collapse; font-size:11px; white-space:nowrap;">
+                <thead>
+                    <tr style="background:#1e293b; color:#94a3b8; text-align:left;">
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155;">HĐ</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155;">Mã hàng</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155;">Tên hàng</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155;">ĐVT</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155; text-align:right;">SL</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155; text-align:right;">Đơn giá</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155; text-align:right;">Thành tiền</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155; text-align:right;">Thuế</th>
+                        <th style="padding:6px 8px; border-bottom:1px solid #334155; text-align:right;">Tổng cộng</th>
+                    </tr>
+                </thead>
+                <tbody id="previewTableBody">
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Console Log -->
@@ -1186,6 +1238,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             rowsTonKho.push([item.ma, item.ten, tonCu, daXuat, tonMoi]);
         }
 
+        // Lưu lại dữ liệu hóa đơn để phục vụ xem trước
+        lastGeneratedRows = rowsHoadon;
+
         // Tạo Workbook Hóa đơn
         generatedHoadonWb = XLSX.utils.book_new();
         const wsHoadon = XLSX.utils.aoa_to_sheet(rowsHoadon);
@@ -1196,30 +1251,124 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         // Tạo Workbook MISA đã trừ tồn kho
         if (misaRawWorkbook) {
             generatedMisaWb = misaRawWorkbook;
-            const sheet = generatedMisaWb.Sheets[generatedMisaWb.SheetNames[0]];
-            const rawRows = XLSX.utils.sheet_to_json(sheet, {header: 1});
-            // Ghi đè cột tồn mới
-            const mapExport = {};
-            for (let m of misaCopy) mapExport[m.ma] = m.daXuat || 0;
-            // SheetJS rewrite
         }
 
         btnRun.disabled = false;
         document.getElementById("downloadBox").style.display = "block";
         log(`[✔] HOÀN TẤT: Tạo thành công ${sttHd - 1} HĐ | Tổng doanh thu: ${tongDoanhThu.toLocaleString()} đ`);
-        alert("Đã tạo hóa đơn thành công! Vui lòng bấm nút Tải Về bên dưới.");
+        alert("Đã tạo hóa đơn thành công! Bạn có thể Tải về hoặc Xem trước ngay bên dưới.");
+    }
+
+    let lastGeneratedRows = [];
+
+    // Hàm tải file Excel chuẩn MIME - Khắc phục triệt để lỗi Android tự đổi tên thành .bin
+    function downloadExcelFile(workbook, filename) {
+        if (!workbook) return;
+        try {
+            // 1. Xuất buffer nhị phân từ workbook
+            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            // 2. MIME type chuẩn của Microsoft Excel OpenXML (.xlsx)
+            const mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            const blob = new Blob([wbout], { type: mimeType });
+
+            // 3. Tải file an toàn cho cả Android Chrome, WebView, iOS & Desktop
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+            }, 4000);
+            log(`[✔] Đang tải file Excel chuẩn: ${filename}`);
+        } catch (e) {
+            log(`[!] Lỗi khi tải file: ${e.message}`);
+            XLSX.writeFile(workbook, filename);
+        }
+    }
+
+    // Hàm chia sẻ trực tiếp qua Zalo / Google Drive / Ứng dụng Excel trên điện thoại
+    async function shareExcelFile(workbook, filename) {
+        if (!workbook) return;
+        try {
+            const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            const file = new File([wbout], filename, { type: mimeType });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: filename,
+                    text: `File Excel: ${filename}`
+                });
+                log(`[✔] Đã mở menu chia sẻ file: ${filename}`);
+                return;
+            }
+        } catch (e) {
+            console.log("Share ignored:", e);
+        }
+        // Fallback: Tự động tải về máy
+        downloadExcelFile(workbook, filename);
     }
 
     function downloadHoaDon() {
         if (!generatedHoadonWb) return;
         const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
-        XLSX.writeFile(generatedHoadonWb, `HOADON_${dateClean}.xlsx`);
+        downloadExcelFile(generatedHoadonWb, `HOADON_${dateClean}.xlsx`);
+    }
+
+    function shareHoaDon() {
+        if (!generatedHoadonWb) return;
+        const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
+        shareExcelFile(generatedHoadonWb, `HOADON_${dateClean}.xlsx`);
     }
 
     function downloadMisa() {
         if (!misaRawWorkbook) return;
         const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
-        XLSX.writeFile(misaRawWorkbook, `MISA_DaTruTonKho_${dateClean}.xlsx`);
+        downloadExcelFile(misaRawWorkbook, `MISA_DaTruTonKho_${dateClean}.xlsx`);
+    }
+
+    function shareMisa() {
+        if (!misaRawWorkbook) return;
+        const dateClean = document.getElementById("inputNgayHd").value.replace(/\//g, "");
+        shareExcelFile(misaRawWorkbook, `MISA_DaTruTonKho_${dateClean}.xlsx`);
+    }
+
+    // Hàm xem trước bảng dữ liệu hóa đơn trực tiếp trên màn hình điện thoại
+    function togglePreviewTable() {
+        const p = document.getElementById("previewContainer");
+        if (p.style.display === "block") {
+            p.style.display = "none";
+            return;
+        }
+        if (!lastGeneratedRows || lastGeneratedRows.length <= 1) {
+            alert("Chưa có dữ liệu hóa đơn để xem trước!");
+            return;
+        }
+        const tbody = document.getElementById("previewTableBody");
+        tbody.innerHTML = "";
+        const maxRows = Math.min(100, lastGeneratedRows.length - 1);
+        for (let i = 1; i <= maxRows; i++) {
+            const r = lastGeneratedRows[i];
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; text-align:center; color:#94a3b8;">${r[0] || i}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; font-family:monospace; color:#38bdf8;">${r[8] || ''}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b;">${r[9] || ''}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; color:#94a3b8;">${r[10] || ''}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; text-align:right; font-weight:bold; color:#4ade80;">${r[11] || 0}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; text-align:right;">${(r[12] || 0).toLocaleString()}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; text-align:right;">${(r[13] || 0).toLocaleString()}</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; text-align:right; color:#94a3b8;">${r[14] || 0}%</td>
+                <td style="padding:6px 8px; border-bottom:1px solid #1e293b; text-align:right; font-weight:bold; color:#38bdf8;">${(r[16] || 0).toLocaleString()} đ</td>
+            `;
+            tbody.appendChild(tr);
+        }
+        p.style.display = "block";
+        p.scrollIntoView({ behavior: 'smooth' });
     }
 
     const CURRENT_VERSION = "2.12";
