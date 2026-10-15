@@ -473,9 +473,18 @@
             <div class="file-input-wrapper">
                 <label class="btn-file">
                     📂 Chọn Kiot
-                    <input type="file" id="fileKiotInput" accept=".xlsx,.xls" style="display:none" onchange="handleKiotFile(this)">
+                    <input type="file" id="fileKiotInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleKiotFile(this)">
                 </label>
                 <div id="kiotFileName" class="file-name-display">Chưa chọn file Kiot...</div>
+            </div>
+            <!-- Khung chọn cột số tiền Kiot (tự động nhận diện + cho phép đổi cột linh hoạt) -->
+            <div id="kiotColSelectorBox" style="display:none; margin-top:8px; font-size:12px; background:rgba(30,41,59,0.9); border:1px solid #38bdf8; border-radius:10px; padding:8px 12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <span style="color:#38bdf8; font-weight:700;">🏷️ Cột tính tiền hóa đơn:</span>
+                    <span id="kiotColDetectedBadge" style="font-size:10px; color:#4ade80; background:rgba(34,197,94,0.15); padding:2px 6px; border-radius:4px;">Tự động nhận diện</span>
+                </div>
+                <select id="selectKiotCol" class="input-ctrl" style="margin-top:2px; padding:6px 10px; font-size:12px; background:#0f172a; width:100%; border:1px solid #475569; border-radius:6px; color:#f8fafc;" onchange="applyKiotColumn(parseInt(this.value))">
+                </select>
             </div>
         </div>
 
@@ -760,13 +769,83 @@ try {
 
     // Biến lưu trữ dữ liệu
     let kiotDataRows = [];
+    let rawKiotRows = [];
+    let kiotHeaderIdx = 0;
+    let selectedKiotColIdx = -1;
+
     let misaDataRows = [];
     let misaRawWorkbook = null;
     let misaStockColName = null;
     let generatedHoadonWb = null;
     let generatedMisaWb = null;
 
-    // Đọc File Kiot
+    // Hàm tiện ích chuẩn hóa chuỗi tiếng Việt (bỏ dấu) để tìm kiếm cực nhạy
+    function removeAccents(str) {
+        if (!str) return "";
+        return String(str)
+            .normalize("NFD")
+            .replace(/[̀-ͯ]/g, "")
+            .toLowerCase()
+            .trim();
+    }
+
+    // Hàm phân tích số tiền thông minh (xử lý cả định dạng 1.500.000 hoặc 1,500,000 hoặc chuỗi)
+    function parseMoney(val) {
+        if (val === null || val === undefined) return 0;
+        if (typeof val === 'number') return isNaN(val) ? 0 : val;
+        let s = String(val).trim().replace(/[^\d.,-]/g, '');
+        if (!s) return 0;
+        if ((s.match(/\./g) || []).length > 1 && !s.includes(',')) {
+            s = s.replace(/\./g, '');
+        } else if ((s.match(/,/g) || []).length > 1 && !s.includes('.')) {
+            s = s.replace(/,/g, '');
+        } else if (s.includes('.') && s.includes(',')) {
+            if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+                s = s.replace(/\./g, '').replace(',', '.');
+            } else {
+                s = s.replace(/,/g, '');
+            }
+        } else if (s.includes(',')) {
+            const parts = s.split(',');
+            if (parts[1] && parts[1].length === 3) {
+                s = s.replace(',', '');
+            } else {
+                s = s.replace(',', '.');
+            }
+        } else if (s.includes('.')) {
+            const parts = s.split('.');
+            if (parts[1] && parts[1].length === 3) {
+                s = s.replace('.', '');
+            }
+        }
+        const num = parseFloat(s);
+        return isNaN(num) ? 0 : num;
+    }
+
+    // Áp dụng tính toán khi người dùng chọn/đổi cột tiền Kiot
+    function applyKiotColumn(colIdx) {
+        if (colIdx < 0 || !rawKiotRows || rawKiotRows.length <= kiotHeaderIdx) return;
+        selectedKiotColIdx = colIdx;
+        kiotDataRows = [];
+        let total = 0;
+        for (let r = kiotHeaderIdx + 1; r < rawKiotRows.length; r++) {
+            const row = rawKiotRows[r];
+            if (!row) continue;
+            const val = parseMoney(row[colIdx]);
+            if (val > 0) {
+                const rounded = Math.round(val);
+                kiotDataRows.push(rounded);
+                total += rounded;
+            }
+        }
+
+        const colName = String((rawKiotRows[kiotHeaderIdx] || [])[colIdx] || `Cột ${colIdx + 1}`).trim();
+        document.getElementById("kpiKiotCount").innerText = kiotDataRows.length.toLocaleString() + " HĐ";
+        document.getElementById("kpiKiotTotal").innerText = total.toLocaleString() + " đ";
+        log(`[✔] Kiot: Nhận diện ${kiotDataRows.length} HĐ (Cột: '${colName}') | Tổng: ${total.toLocaleString()} đ`);
+    }
+
+    // Đọc File Kiot siêu thông minh & tự động nhận diện mọi loại xuất từ KiotViet
     function handleKiotFile(input) {
         const file = input.files[0];
         if (!file) return;
@@ -779,49 +858,126 @@ try {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
-                
-                // Tìm dòng tiêu đề có cột giá trị
-                let headerIdx = 0;
-                for (let r = 0; r < Math.min(15, rows.length); r++) {
-                    const rowStr = (rows[r] || []).map(x => String(x || "").toLowerCase());
-                    if (rowStr.some(x => x.includes('giá trị') || x.includes('tổng tiền') || x.includes('thành tiền') || x.includes('khách đã trả'))) {
-                        headerIdx = r;
+
+                // 1. Quét tìm sheet có dữ liệu (hỗ trợ file nhiều sheet)
+                let foundRows = null;
+                for (let sName of workbook.SheetNames) {
+                    const sheet = workbook.Sheets[sName];
+                    if (!sheet || !sheet['!ref']) continue;
+                    const r = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                    if (r && r.length > 1) {
+                        foundRows = r;
                         break;
                     }
                 }
 
-                const headers = rows[headerIdx] || [];
-                let valColIdx = -1;
-                for (let c = 0; c < headers.length; c++) {
-                    const cl = String(headers[c] || "").toLowerCase();
-                    if (cl.includes('giá trị') || cl.includes('tổng tiền') || cl.includes('khách đã trả') || cl.includes('thành tiền')) {
-                        valColIdx = c;
-                        break;
-                    }
-                }
-
-                if (valColIdx === -1) {
-                    alert("Không tìm thấy cột 'Giá trị' hoặc 'Tổng tiền' trong file Kiot!");
+                if (!foundRows || foundRows.length === 0) {
+                    alert("File Kiot không có dữ liệu!");
                     return;
                 }
 
-                kiotDataRows = [];
-                let total = 0;
-                for (let r = headerIdx + 1; r < rows.length; r++) {
-                    const val = parseFloat(rows[r][valColIdx]) || 0;
-                    if (val > 0) {
-                        kiotDataRows.push(Math.round(val));
-                        total += Math.round(val);
+                rawKiotRows = foundRows;
+
+                // 2. Tìm dòng tiêu đề tốt nhất và cột tiền
+                const PRIORITY_1 = ['gia tr', 'gia tri', 'gia try', 'tong tien', 'khach can tra', 'khach da tra', 'can tra', 'da tra', 'phai tra', 'tong thanh toan', 'tong cong', 'thanh tien', 'tien thu', 'can thu', 'phai thu', 'tong tien hang'];
+                const PRIORITY_2 = ['so tien', 'tien hang', 'doanh thu', 'doanh so', 'thanh toan'];
+                const EXCLUDE_KW = ['thue', 'vat', 'giam gia', 'chiet khau', 'stt'];
+
+                let bestHeaderIdx = -1;
+                let bestValColIdx = -1;
+                let bestScore = -1;
+
+                // Quét qua tối đa 50 dòng đầu
+                for (let r = 0; r < Math.min(50, rawKiotRows.length); r++) {
+                    const row = rawKiotRows[r] || [];
+                    if (!row.length) continue;
+
+                    for (let c = 0; c < row.length; c++) {
+                        const cellRaw = String(row[c] || "").trim();
+                        if (!cellRaw) continue;
+                        const cellNorm = removeAccents(cellRaw);
+
+                        if (EXCLUDE_KW.some(ex => cellNorm.includes(ex))) continue;
+
+                        let score = -1;
+                        if (PRIORITY_1.some(p1 => cellNorm.includes(p1))) score = 100;
+                        else if (PRIORITY_2.some(p2 => cellNorm.includes(p2))) score = 50;
+
+                        if (score > -1) {
+                            let validNumbers = 0;
+                            for (let nextR = r + 1; nextR < Math.min(r + 10, rawKiotRows.length); nextR++) {
+                                const val = parseMoney(rawKiotRows[nextR] ? rawKiotRows[nextR][c] : 0);
+                                if (val > 0) validNumbers++;
+                            }
+                            score += validNumbers * 10;
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestHeaderIdx = r;
+                                bestValColIdx = c;
+                            }
+                        }
                     }
                 }
 
-                document.getElementById("kpiKiotCount").innerText = kiotDataRows.length.toLocaleString() + " HĐ";
-                document.getElementById("kpiKiotTotal").innerText = total.toLocaleString() + " đ";
-                log(`[✔] Kiot: Đã nạp ${kiotDataRows.length} HĐ | Tổng: ${total.toLocaleString()} đ`);
+                // 3. Fallback thống kê số liệu nếu không khớp từ khóa
+                if (bestValColIdx === -1) {
+                    let maxNumCol = -1;
+                    let maxNumCount = 0;
+                    let numColHeaderIdx = 0;
+
+                    for (let r = 0; r < Math.min(20, rawKiotRows.length); r++) {
+                        const row = rawKiotRows[r] || [];
+                        for (let c = 0; c < row.length; c++) {
+                            let count = 0;
+                            for (let nextR = r + 1; nextR < Math.min(r + 30, rawKiotRows.length); nextR++) {
+                                const val = parseMoney(rawKiotRows[nextR] ? rawKiotRows[nextR][c] : 0);
+                                if (val >= 1000) count++;
+                            }
+                            if (count > maxNumCount) {
+                                maxNumCount = count;
+                                maxNumCol = c;
+                                numColHeaderIdx = r;
+                            }
+                        }
+                    }
+
+                    if (maxNumCol !== -1 && maxNumCount >= 1) {
+                        bestHeaderIdx = numColHeaderIdx;
+                        bestValColIdx = maxNumCol;
+                    }
+                }
+
+                if (bestHeaderIdx === -1) bestHeaderIdx = 0;
+                kiotHeaderIdx = bestHeaderIdx;
+
+                // 4. Đưa danh sách các cột vào dropdown cho người dùng xem và đổi
+                const headers = rawKiotRows[kiotHeaderIdx] || [];
+                const selectEl = document.getElementById("selectKiotCol");
+                selectEl.innerHTML = "";
+
+                for (let c = 0; c < headers.length; c++) {
+                    const colName = String(headers[c] || `Cột ${c + 1}`).trim();
+                    if (!colName) continue;
+                    const opt = document.createElement("option");
+                    opt.value = c;
+                    opt.textContent = `${colName} (Cột ${c + 1})`;
+                    if (c === bestValColIdx) opt.selected = true;
+                    selectEl.appendChild(opt);
+                }
+
+                // Hiển thị khung chọn cột
+                document.getElementById("kiotColSelectorBox").style.display = "block";
+
+                // Áp dụng tính toán
+                if (bestValColIdx !== -1) {
+                    applyKiotColumn(bestValColIdx);
+                } else {
+                    alert("Chưa tự động xác định được cột tiền. Vui lòng chọn cột tiền trong danh sách hiển thị bên dưới ô chọn file Kiot!");
+                }
+
             } catch(err) {
                 alert("Lỗi đọc file Kiot: " + err.message);
+                console.error(err);
             }
         };
         reader.readAsArrayBuffer(file);
@@ -840,14 +996,21 @@ try {
             try {
                 const data = new Uint8Array(e.target.result);
                 misaRawWorkbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = misaRawWorkbook.Sheets[misaRawWorkbook.SheetNames[0]];
+                
+                // Quét tìm sheet có dữ liệu
+                let firstSheet = null;
+                for (let sName of misaRawWorkbook.SheetNames) {
+                    const s = misaRawWorkbook.Sheets[sName];
+                    if (s && s['!ref']) { firstSheet = s; break; }
+                }
+                if (!firstSheet) firstSheet = misaRawWorkbook.Sheets[misaRawWorkbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
 
                 // Tìm dòng tiêu đề
                 let headerIdx = 0;
-                for (let r = 0; r < Math.min(15, rows.length); r++) {
-                    const rowStr = (rows[r] || []).map(x => String(x || "").toLowerCase());
-                    if (rowStr.some(x => x.includes('mã') || x.includes('tên'))) {
+                for (let r = 0; r < Math.min(25, rows.length); r++) {
+                    const rowStr = (rows[r] || []).map(x => removeAccents(x));
+                    if (rowStr.some(x => x.includes('ma') || x.includes('ten'))) {
                         headerIdx = r;
                         break;
                     }
@@ -857,25 +1020,25 @@ try {
                 let maIdx = -1, tenIdx = -1, dvtIdx = -1, stockIdx = -1, taxIdx = -1;
 
                 for (let c = 0; c < headers.length; c++) {
-                    const cl = String(headers[c] || "").toLowerCase().trim();
-                    if (maIdx === -1 && (['mã', 'mã hàng', 'mã vthh', 'mã sp'].includes(cl) || (cl.includes('mã') && !cl.includes('vách')))) maIdx = c;
-                    if (tenIdx === -1 && (['tên', 'tên hàng', 'tên vthh', 'tên sp'].includes(cl) || cl.includes('tên'))) tenIdx = c;
-                    if (dvtIdx === -1 && (['đvt', 'đơn vị tính', 'đơn vị tính chính'].includes(cl) || cl.includes('đơn vị'))) dvtIdx = c;
-                    if (taxIdx === -1 && (cl.includes('thuế') || cl.includes('vat'))) taxIdx = c;
+                    const cl = removeAccents(headers[c]);
+                    if (maIdx === -1 && (['ma', 'ma hang', 'ma vthh', 'ma sp'].includes(cl) || (cl.includes('ma') && !cl.includes('vach')))) maIdx = c;
+                    if (tenIdx === -1 && (['ten', 'ten hang', 'ten vthh', 'ten sp'].includes(cl) || cl.includes('ten'))) tenIdx = c;
+                    if (dvtIdx === -1 && (['dvt', 'don vi tinh', 'don vi tinh chinh'].includes(cl) || cl.includes('don vi'))) dvtIdx = c;
+                    if (taxIdx === -1 && (cl.includes('thue') || cl.includes('vat'))) taxIdx = c;
                 }
 
                 // Cột tồn kho ưu tiên
                 for (let c = 0; c < headers.length; c++) {
-                    const cl = String(headers[c] || "").toLowerCase().trim();
-                    if (['tồn cuối', 'khả dụng', 'số lượng tồn', 'tồn kho'].some(k => cl.includes(k))) {
+                    const cl = removeAccents(headers[c]);
+                    if (['ton cuoi', 'kha dung', 'so luong ton', 'ton kho'].some(k => cl.includes(k))) {
                         stockIdx = c;
                         break;
                     }
                 }
                 if (stockIdx === -1) {
                     for (let c = 0; c < headers.length; c++) {
-                        const cl = String(headers[c] || "").toLowerCase().trim();
-                        if (cl.includes('số lượng') && !['đầu kỳ', 'nhập', 'xuất'].some(k => cl.includes(k))) {
+                        const cl = removeAccents(headers[c]);
+                        if (cl.includes('so luong') && !['dau ky', 'nhap', 'xuat'].some(k => cl.includes(k))) {
                             stockIdx = c;
                             break;
                         }
@@ -897,7 +1060,7 @@ try {
                     const ma = String(row[maIdx]).trim();
                     const ten = String(row[tenIdx] || "").trim();
                     const dvt = String(dvtIdx !== -1 ? (row[dvtIdx] || "Cái") : "Cái").trim();
-                    const stock = parseFloat(row[stockIdx]) || 0;
+                    const stock = parseMoney(row[stockIdx]);
                     
                     let taxRate = 8;
                     if (taxIdx !== -1 && row[taxIdx] != null) {
