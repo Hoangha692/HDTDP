@@ -559,7 +559,7 @@
         <div style="margin-bottom:12px; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 12px; border:1px solid rgba(34,197,94,0.3);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-size:12px; font-weight:700; color:#4ade80;">📄 File Hóa Đơn (17 Cột Thuế)</span>
-                <span id="badgeHoadonName" style="font-size:11px; color:#a7f3d0; background:rgba(34,197,94,0.18); padding:2px 8px; border-radius:6px; font-family:monospace; border:1px solid rgba(34,197,94,0.3);">HOADON.xlsx</span>
+                <span id="badgeHoadonName" onclick="copyFileName(this.textContent)" title="Bấm để sao chép tên" style="cursor:pointer; font-size:11px; color:#a7f3d0; background:rgba(34,197,94,0.18); padding:2px 8px; border-radius:6px; font-family:monospace; border:1px solid rgba(34,197,94,0.3);">HOADON.xlsx</span>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                 <button id="btnDlHoadon" class="btn-download" style="margin-bottom:0;" onclick="downloadHoaDon()">
@@ -575,7 +575,7 @@
         <div style="margin-bottom:12px; background:rgba(0,0,0,0.25); border-radius:14px; padding:10px 12px; border:1px solid rgba(56,189,248,0.3);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <span style="font-size:12px; font-weight:700; color:#38bdf8;">📦 File MISA Đã Trừ Tồn Kho</span>
-                <span id="badgeMisaName" style="font-size:11px; color:#bae6fd; background:rgba(56,189,248,0.18); padding:2px 8px; border-radius:6px; font-family:monospace; border:1px solid rgba(56,189,248,0.3);">MISA.xlsx</span>
+                <span id="badgeMisaName" onclick="copyFileName(this.textContent)" title="Bấm để sao chép tên" style="cursor:pointer; font-size:11px; color:#bae6fd; background:rgba(56,189,248,0.18); padding:2px 8px; border-radius:6px; font-family:monospace; border:1px solid rgba(56,189,248,0.3);">MISA.xlsx</span>
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
                 <button id="btnDlMisa" class="btn-download btn-download-misa" style="margin-bottom:0;" onclick="downloadMisa()">
@@ -1431,14 +1431,22 @@ try {
             const mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
             const blob = new Blob([wbout], { type: mimeType });
 
-            // 3. Tải file an toàn cho cả Android Chrome, WebView, iOS & Desktop
-            const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.style.display = "none";
-            a.href = blobUrl;
+            a.href = blobUrl + "#/" + filename;
             a.download = filename;
             a.setAttribute("download", filename);
+            a.setAttribute("name", filename);
+            a.title = filename;
             document.body.appendChild(a);
+
+            // Tự động sao chép tên file vào bộ nhớ tạm (phòng hờ Android Save As)
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(filename);
+                }
+            } catch(clipErr) {}
+
             a.click();
             setTimeout(() => {
                 document.body.removeChild(a);
@@ -1503,6 +1511,19 @@ try {
         const elM = document.getElementById("badgeMisaName");
         if (elH) elH.textContent = hName;
         if (elM) elM.textContent = mName;
+    }
+
+    function copyFileName(name) {
+        name = String(name || "").trim();
+        if (!name) return;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(name);
+                alert("📋 Đã sao chép tên file: " + name);
+                return;
+            }
+        } catch(e) {}
+        alert("Tên file mặc định: " + name);
     }
 
     function downloadHoaDon() {
