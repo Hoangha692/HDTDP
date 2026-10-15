@@ -1,6 +1,6 @@
 {
   "version": "2.12",
   "release_date": "15/10/2026",
-  "changelog": "- Cho phép gom 1 HĐ bốc nhiều mặt hàng phong phú (15-30+ dòng)\n- Khống chế số lượng bán lẻ tự nhiên (1-10 cái), không nhân vọt số lượng\n- Khớp thuế tuyệt đối 100% (0 đ chênh lệch)\n- Tối ưu động cơ cân bằng số lượng và đơn giá",
-  "download_url": "https://github.com/Hoangha692/HDTDP/releases/download/v2.12/PM_HoaDon.zip"
+  "changelog": "- Cho phép gom 1 HĐ bốc nhiều mặt hàng phong phú (15-30+ dòng)\n- Khống chế số lượng bán lẻ tự nhiên (1-10 cái), không nhân vọt số lượng\n- Khớp thuế tuyệt đối 100% (0 đ chênh lệch)\n- Tối ưu động cơ cân bằng số lượng và đơn giá\n- Đồng bộ phiên bản Mobile và PC qua GitHub",
+  "download_url": "https://github.com/Hoangha692/HDTDP/releases/download/V2.12/PM_HoaDon.zip"
 }
